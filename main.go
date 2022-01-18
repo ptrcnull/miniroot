@@ -12,6 +12,7 @@ import (
 var rootPath = flag.String("root", "", "path to root directory")
 var initCmd = flag.String("init", "/sbin/init", "init command")
 var workdir = flag.String("workdir", "/", "work directory")
+var pidns = flag.Bool("pidns", false, "create pid namespace")
 
 func main() {
 	flag.Parse()
@@ -26,13 +27,16 @@ func main() {
 	cmd.Dir = *workdir
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Chroot:       *rootPath,
-		Cloneflags:   syscall.CLONE_NEWUSER|syscall.CLONE_NEWPID,
+		Cloneflags:   syscall.CLONE_NEWUSER,
 		UidMappings: []syscall.SysProcIDMap{
 			{ContainerID: 0, HostID: os.Getuid(), Size: 1},
 		},
 		GidMappings: []syscall.SysProcIDMap{
 			{ContainerID: 0, HostID: os.Getgid(), Size: 1},
 		},
+	}
+	if *pidns {
+		cmd.SysProcAttr.Cloneflags |= syscall.CLONE_NEWPID
 	}
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
