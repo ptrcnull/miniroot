@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"syscall"
 )
@@ -45,6 +46,15 @@ func main() {
 	if err != nil {
 		fmt.Printf("failed to start: %s\n", err)
 	}
+
+	sigs := make(chan os.Signal, 1)
+	go func() {
+		for {
+			_ = <-sigs
+			cmd.Process.Signal(syscall.SIGTERM)
+		}
+	}()
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	err = cmd.Wait()
 	if err != nil {
